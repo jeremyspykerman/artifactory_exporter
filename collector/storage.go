@@ -63,6 +63,7 @@ type repoSummary struct {
 	UsedSpace          float64
 	ItemsCount         float64
 	PackageType        string
+	QuotaBytes         float64
 	Percentage         float64
 	TotalCreate1m      float64
 	TotalCreated5m     float64
@@ -87,6 +88,10 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		rs.FilesCount = float64(repo.FilesCount)
 		rs.ItemsCount = float64(repo.ItemsCount)
 		rs.PackageType = strings.ToLower(repo.PackageType)
+		rs.QuotaBytes = float64(0)
+		if e.enableRepoQuotas {
+			rs.QuotaBytes = float64(e.client.FetchRepoQuota(repo.RepoKey))
+		}
 		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
 		if err != nil {
 			level.Debug(e.logger).Log("msg", "There was an issue parsing repo UsedSpace", "repo", repo.RepoKey, "err", err)
@@ -127,6 +132,20 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 			case "repoPercentage":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.Percentage)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.Percentage, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+			}
+		}
+
+		if e.enableRepoQuotas && repoSummary.QuotaBytes > 0 {
+			for metricName, metric := range repoQuotaMetrics {
+				switch metricName {
+				case "repoQuota":
+					level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.QuotaBytes)
+					ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.QuotaBytes, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				case "repoQuotaUsedPercent":
+					quotaPercent := repoSummary.UsedSpace / repoSummary.QuotaBytes * 100
+					level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", quotaPercent)
+					ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, quotaPercent, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				}
 			}
 		}
 	}

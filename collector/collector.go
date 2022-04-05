@@ -48,6 +48,11 @@ var (
 		"repoPercentage": newMetric("repo_percentage", "storage", "Percentage of space used by an Artifactory repository.", repoLabelNames),
 	}
 
+	repoQuotaMetrics = metrics{
+		"repoQuota":            newMetric("repo_quota_bytes", "storage", "Quota size allocated to an Arifactory repository in bytes.", repoLabelNames),
+		"repoQuotaUsedPercent": newMetric("repo_quota_used_percent", "storage", "Percentage of quota used by an Artifactory repository.", repoLabelNames),
+	}
+
 	systemMetrics = metrics{
 		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", nil),
 		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", []string{"version", "revision"}),
@@ -90,6 +95,15 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.totalScrapes.Desc()
 	ch <- e.totalAPIErrors.Desc()
 	ch <- e.jsonParseFailures.Desc()
+	e.describeQuotaMetrics(ch)
+}
+
+func (e *Exporter) describeQuotaMetrics(ch chan<- *prometheus.Desc) {
+	if e.enableRepoQuotas {
+		for _, m := range repoQuotaMetrics {
+			ch <- m
+		}
+	}
 }
 
 // Collect fetches the stats from  Artifactory and delivers them

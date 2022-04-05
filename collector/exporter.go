@@ -15,6 +15,8 @@ type Exporter struct {
 	client *artifactory.Client
 	mutex  sync.RWMutex
 
+	enableRepoQuotas bool
+
 	up                                              prometheus.Gauge
 	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
 	logger                                          log.Logger
@@ -24,7 +26,8 @@ type Exporter struct {
 func NewExporter(conf *config.Config) (*Exporter, error) {
 	client := artifactory.NewClient(conf)
 	return &Exporter{
-		client: client,
+		client:           client,
+		enableRepoQuotas: conf.ArtiRepoQuotas,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",
