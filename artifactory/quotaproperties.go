@@ -24,6 +24,8 @@ func (c *Client) FetchRepoQuota(repository string) uint64 {
 		if err == nil {
 			return quota
 		} else {
+			// Because we fetch the quota properties separately for every repo, it seems like
+			// a mistake to set Artifactory up value to 0 for any one of them failing
 			level.Warn(c.logger).Log("msg", "attempt to extract quota bytes failed", "err", err)
 		}
 	}
