@@ -73,6 +73,13 @@ type repoSummary struct {
 	TotalDownloaded15m float64
 }
 
+func (rs *repoSummary) isQuotaRepoType() bool {
+	if strings.ToLower(rs.Type) == "local" && strings.ToLower(rs.PackageType) != "buildinfo" {
+		return true
+	}
+	return false
+}
+
 func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSummary, error) {
 	var err error
 	rs := repoSummary{}
@@ -88,8 +95,8 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		rs.FilesCount = float64(repo.FilesCount)
 		rs.ItemsCount = float64(repo.ItemsCount)
 		rs.PackageType = strings.ToLower(repo.PackageType)
-		rs.QuotaBytes = float64(0)
-		if e.enableRepoQuotas {
+		rs.QuotaBytes = float64(artifactory.InvalidQuotaSize)
+		if e.enableRepoQuotas && rs.isQuotaRepoType() {
 			rs.QuotaBytes = float64(e.client.FetchRepoQuota(repo.RepoKey))
 		}
 		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
@@ -135,7 +142,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 			}
 		}
 
-		if e.enableRepoQuotas && repoSummary.QuotaBytes > 0 {
+		if e.enableRepoQuotas && repoSummary.QuotaBytes > artifactory.InvalidQuotaSize {
 			for metricName, metric := range repoQuotaMetrics {
 				switch metricName {
 				case "repoQuota":

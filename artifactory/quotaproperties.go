@@ -8,7 +8,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-const quotaProperty = "repository.path.quota"
+const InvalidQuotaSize = 0
 
 type Properties struct {
 	Properties map[string][]string `json:"properties"`
@@ -30,12 +30,13 @@ func (c *Client) FetchRepoQuota(repository string) uint64 {
 		}
 	}
 
-	return 0
+	return InvalidQuotaSize
 }
 
 func extractQuota(bytes []byte) (uint64, error) {
 	parsed := Properties{}
 	err := json.Unmarshal(bytes, &parsed)
+	quotaProperty := "repository.path.quota"
 
 	if err == nil {
 		value := parsed.Properties[quotaProperty]
@@ -45,7 +46,7 @@ func extractQuota(bytes []byte) (uint64, error) {
 		}
 	}
 
-	return 0, err
+	return InvalidQuotaSize, err
 }
 
 func getPropertiesPath(repository string) string {
