@@ -113,6 +113,8 @@ Flags:
                                 Path under which to expose metrics.
       --artifactory.scrape-uri="http://localhost:8081/artifactory"
                                 URI on which to scrape JFrog Artifactory.
+      --artifactory.repo-quota-enable  
+                                Flag that enables repo quotas data collection (https://github.com/jfrog/artifactory-user-plugins/tree/master/storage/repoQuota)                                
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
       --log.level=info          Only log messages with the given severity or above. One of: [debug, info, warn, error]
@@ -126,6 +128,7 @@ Flags:
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
+| `artifactory.repo-quota-enable`<br/> `ARTI_REPO_QUOTA_ENABLE` | No  | `false`  | Enables the quota monitoring. |
 | `log.level` | No | `info` | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
 | `log.format` | No | `logfmt` | Output format of log messages. One of: [logfmt, json]. |
 | `ARTI_USERNAME` | *No | | User to access Artifactory |
@@ -135,11 +138,14 @@ Flags:
 * Either `ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variables has to be set.
 
 ### Metrics
+The quota metrics are only available if the feature to collect them is enabled.
 
 Some metrics are not available with Artifactory OSS license. The exporter returns the following metrics:
 
 | Metric | Description | Labels | OSS support |
 | ------ | ----------- | ------ | ------ |
+| artifactory_storage_repo_quota_used_percent | Percentage of quota used |`name`, `package_type`, `type` |  TODO: confirm it works with OSS  |
+| artifactory_storage_repo_quota_bytes  | Artifactory quota in bytes |`name`, `package_type`, `type` |  TODO: confirm it works with OSS  |
 | artifactory_up | Was the last scrape of Artifactory successful. |  | &#9989; |
 | artifactory_exporter_build_info | Exporter build information. | `version`, `revision`, `branch`, `goversion` | &#9989; |
 | artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  | &#9989; |
